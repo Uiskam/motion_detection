@@ -1,4 +1,4 @@
-# import cv2 as cv
+#import cv2 as cv
 #
 # print('xd')
 # vcap = cv.VideoCapture("rtsp://demo:demo@ipvmdemo.dyndns.org:5541/onvif-media/media.amp?profile=profile_1_h264&sessiontimeout=60&streamtype=unicast")
@@ -12,7 +12,7 @@
 import cv2
 import numpy as np
 
-# cap = cv2.VideoCapture('vtest.avi')
+#cap = cv2.VideoCapture('vtest.avi')
 cap = cv2.VideoCapture('test.mp4')
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
