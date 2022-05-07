@@ -2,7 +2,6 @@ import cv2
 
 debug = False
 
-# cap = cv2.VideoCapture('https://imageserver.webcamera.pl/blog/webcamera_premium_filmmp_gotowemp4--1624624964.mp4')
 cap = cv2.VideoCapture('test.mp4')
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
