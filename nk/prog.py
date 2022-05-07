@@ -14,7 +14,7 @@ def main():
         mask_sensitivity = sys.argv[2]
         motion_sensitivity = sys.argv[3]
 
-    elif len(sys.argv) == 4:
+    elif len(sys.argv) == 5:
         src = sys.argv[1]
         mask_sensitivity = sys.argv[2]
         motion_sensitivity = sys.argv[3]
