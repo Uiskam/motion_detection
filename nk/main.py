@@ -1,18 +1,8 @@
-# import cv2 as cv
-#
-# print('xd')
-# vcap = cv.VideoCapture("rtsp://demo:demo@ipvmdemo.dyndns.org:5541/onvif-media/media.amp?profile=profile_1_h264&sessiontimeout=60&streamtype=unicast")
-# print('am here')
-# while(1):
-#     ret, frame = vcap.read()
-#     cv.imshow('VIDEO', frame)
-#     cv.waitKey(1)
-
-
 import cv2
-import numpy as np
 
-# cap = cv2.VideoCapture('vtest.avi')
+debug = False
+
+# cap = cv2.VideoCapture('https://imageserver.webcamera.pl/blog/webcamera_premium_filmmp_gotowemp4--1624624964.mp4')
 cap = cv2.VideoCapture('test.mp4')
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
@@ -24,32 +14,68 @@ out = cv2.VideoWriter("output.avi", fourcc, 5.0, (1280, 720))
 
 ret, frame1 = cap.read()
 ret, frame2 = cap.read()
-print(frame1.shape)
+
+INPUT_WIDTH = len(frame1[0])
+INPUT_HEIGHT = len(frame1)
+
+START_WIDTH = 0
+START_HEIGHT = 0
+END_WIDTH = INPUT_WIDTH
+END_HEIGHT = INPUT_HEIGHT
+SMALLEST_AREA = 2000
+
+SENSITIVE_OF_CONTOURS = [(START_WIDTH, START_HEIGHT, END_WIDTH, END_HEIGHT//2, SMALLEST_AREA),
+                         (START_WIDTH, END_HEIGHT//2, END_WIDTH, END_HEIGHT, 250)]
+
+# print(frame1.shape)
 while cap.isOpened():
     diff = cv2.absdiff(frame1, frame2)
-    # gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(diff, (25, 25), 0)
-    _, thresh = cv2.threshold(blur, 20, 255, cv2.THRESH_BINARY)
-    dilated = cv2.dilate(thresh, None, iterations=3)
+    gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (3, 3), 0)
+    _, thresh = cv2.threshold(blur, 40, 255, cv2.THRESH_BINARY)
+    dilated = cv2.dilate(thresh, None, iterations=10)
     contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     for contour in contours:
         (x, y, w, h) = cv2.boundingRect(contour)
-        # print(x,y,w,h)
-        # for contour2 in contours:
-        #     (x2, y2, w2, h2) = cv2.boundingRect(contour2)
-        #     if not (x2 <= x and x2 + w2 >= x + w and y2 <= y and y2 + h2 >= y + h):
-
-        if cv2.contourArea(contour) < 10:
-            continue
-        cv2.rectangle(frame1, (x, y), (x + w, y + h), (0, 0, 255), 2)
-        cv2.putText(frame1, "Status: {}".format('Movement'), (10, 20), cv2.FONT_HERSHEY_SIMPLEX,
-                    1, (0, 255, 0), 3)
-    # cv2.drawContours(frame1, contours, -1, (0, 255, 0), 2)
+        for start_width, start_height, end_width, end_height, smallest_area in SENSITIVE_OF_CONTOURS:
+            if start_width <= x and x + w <= end_width and start_height <= y and y + h <= end_height:
+                if cv2.contourArea(contour) < smallest_area:
+                    continue
+                else:
+                    cv2.rectangle(frame1, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    cv2.putText(frame1, "Status: {}".format('Movement'), (10, 20), cv2.FONT_HERSHEY_SIMPLEX,
+                                1, (0, 0, 255), 3)
 
     image = cv2.resize(frame1, (1280, 720))
     out.write(image)
-    cv2.imshow("feed", frame1)
+
+    if debug:
+        WIDHT = 600
+        HEGIHT = 400
+        resized_frame1 = cv2.resize(frame1, (WIDHT, HEGIHT))
+        resized_frame2 = cv2.resize(frame2, (WIDHT, HEGIHT))
+        resized_diff = cv2.resize(diff, (WIDHT, HEGIHT))
+        resized_gray = cv2.resize(gray, (WIDHT, HEGIHT))
+        resized_blur = cv2.resize(blur, (WIDHT, HEGIHT))
+        resized_thresh = cv2.resize(thresh, (WIDHT, HEGIHT))
+        resized_dilated = cv2.resize(dilated, (WIDHT, HEGIHT))
+        result = cv2.resize(frame1, (WIDHT, HEGIHT))
+        cv2.imshow("Frame1", resized_frame1)
+        cv2.imshow("Frame2", resized_frame2)
+        cv2.imshow("Difference between frame1 and frame2", resized_diff)
+        cv2.imshow("Gray on diff image", resized_gray)
+        cv2.imshow("Blurred gray image", resized_blur)
+        cv2.imshow("Thresh image", resized_thresh)
+        cv2.imshow("Dilated image with thresh", resized_dilated)
+        cv2.imshow("result", result)
+        cv2.waitKey(0)
+    else:
+        WIDHT = 1024
+        HEGIHT = 728
+        frame1 = cv2.resize(frame1, (WIDHT, HEGIHT))
+        cv2.imshow("result", frame1)
+
     frame1 = frame2
     ret, frame2 = cap.read()
 
