@@ -1,14 +1,18 @@
 import cv2
+link = 'https://imageserver.webcamera.pl/blog/webcamera_premium_filmmp_gotowemp4--1624624964.mp4'
+link2 = './Demos/Demo1.mp4'
+warszawa = 'https://imageserver.webcamera.pl/rec/warszawa-plac-zamkowy/latest.mp4'
+agh = 'http://live.uci.agh.edu.pl/video/stream1.cgi?start=1543408695 '
 
 gauss_kernel_value = 3
 thresh_value = 40
 dilated_itrs = 10
-debug = True
+debug = False
 
 
 def main():
-    cap = cv2.VideoCapture('https://imageserver.webcamera.pl/blog/webcamera_premium_filmmp_gotowemp4--1624624964.mp4')
-    # cap = cv2.VideoCapture('test.mp4')
+    cap = cv2.VideoCapture(link)
+    # cap = cv2.VideoCapture('Demos/Demo1.mp4')
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -27,10 +31,12 @@ def main():
     START_HEIGHT = 0
     END_WIDTH = INPUT_WIDTH
     END_HEIGHT = INPUT_HEIGHT
-    SMALLEST_AREA = 2000
+    SMALLEST_AREA = 600
 
     SENSITIVE_OF_CONTOURS = [(START_WIDTH, START_HEIGHT, END_WIDTH, END_HEIGHT // 2, SMALLEST_AREA),
                              (START_WIDTH, END_HEIGHT // 2, END_WIDTH, END_HEIGHT, 250)]
+
+    SENSITIVE_OF_CONTOURS = [(START_WIDTH, START_HEIGHT, END_WIDTH, END_HEIGHT, SMALLEST_AREA)]
 
     # print(frame1.shape)
     while cap.isOpened():
@@ -56,8 +62,8 @@ def main():
         out.write(image)
 
         if debug:
-            WIDHT = 600
-            HEGIHT = 400
+            WIDHT = 400
+            HEGIHT = 300
             resized_frame1 = cv2.resize(frame1, (WIDHT, HEGIHT))
             resized_frame2 = cv2.resize(frame2, (WIDHT, HEGIHT))
             resized_diff = cv2.resize(diff, (WIDHT, HEGIHT))
