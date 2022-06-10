@@ -1,49 +1,80 @@
 import cv2
-link = 'https://imageserver.webcamera.pl/blog/webcamera_premium_filmmp_gotowemp4--1624624964.mp4'
-link2 = './Demos/Demo1.mp4'
+"""przkładowe
+film1 = 'https://imageserver.webcamera.pl/blog/webcamera_premium_filmmp_gotowemp4--1624624964.mp4'
+film2 = './Demos/Demo1.mp4'
 warszawa = 'https://imageserver.webcamera.pl/rec/warszawa-plac-zamkowy/latest.mp4'
-agh = 'http://live.uci.agh.edu.pl/video/stream1.cgi?start=1543408695 '
+agh = 'http://live.uci.agh.edu.pl/video/stream1.cgi?start=1543408695'
+"""
 
-gauss_kernel_value = 3
-thresh_value = 40
-dilated_itrs = 10
+gauss_kernel_value = None
+thresh_value = None
+dilated_itrs = None
 debug = False
+MASKS = []
+link = None
+
+
+def read_settings(path):
+    global link, gauss_kernel_value, thresh_value, dilated_itrs, debug, MASKS
+    with open(path, "r") as f:
+        link = f.readline()
+        if link[0] in ("0", "1", "2", "3"):
+            link = int(link)
+        else:
+            link = link.strip()
+
+        sensitive_percent = float(f.readline())
+        gauss_kernel_value = 3
+        thresh_value = 2 * (100 - sensitive_percent)
+        dilated_itrs = 10
+        debug = not f.readline().__contains__("nodebug")
+
+        lines = f.readlines()
+        for line in lines:
+            if line.endswith("\n"):
+                line = line[:-1]
+            x_start_percent, x_end_percent, y_start_percent, y_end_percent, sens = list(map(float, line.split(", ")))
+            MASKS.append((x_start_percent, x_end_percent, y_start_percent, y_end_percent, sens))
 
 
 def main():
+    print(link)
     cap = cv2.VideoCapture(link)
-    # cap = cv2.VideoCapture('Demos/Demo1.mp4')
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
 
     out = cv2.VideoWriter("output.avi", fourcc, 5.0, (1280, 720))
-
+    print(link)
     ret, frame1 = cap.read()
     ret, frame2 = cap.read()
 
     INPUT_WIDTH = len(frame1[0])
     INPUT_HEIGHT = len(frame1)
 
-    START_WIDTH = 0
-    START_HEIGHT = 0
-    END_WIDTH = INPUT_WIDTH
-    END_HEIGHT = INPUT_HEIGHT
-    SMALLEST_AREA = 600
+    SENSITIVE_OF_CONTOURS = []
 
-    SENSITIVE_OF_CONTOURS = [(START_WIDTH, START_HEIGHT, END_WIDTH, END_HEIGHT // 2, SMALLEST_AREA),
-                             (START_WIDTH, END_HEIGHT // 2, END_WIDTH, END_HEIGHT, 250)]
-
-    SENSITIVE_OF_CONTOURS = [(START_WIDTH, START_HEIGHT, END_WIDTH, END_HEIGHT, SMALLEST_AREA)]
-
-    # print(frame1.shape)
+    for mask in MASKS:
+        x_start_percent, x_end_percent, y_start_percent, y_end_percent, sens_percent = mask
+        SENSITIVE_OF_CONTOURS.append((
+            int(INPUT_WIDTH * x_start_percent / 100),
+            int(INPUT_HEIGHT * y_start_percent / 100),
+            int(INPUT_WIDTH * x_end_percent / 100),
+            int(INPUT_HEIGHT * y_end_percent / 100),
+            INPUT_HEIGHT * INPUT_WIDTH * sens_percent / 100
+        )
+        )
+    print(SENSITIVE_OF_CONTOURS)
     while cap.isOpened():
         diff = cv2.absdiff(frame1, frame2)
         gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (gauss_kernel_value, gauss_kernel_value), 0)
         _, thresh = cv2.threshold(blur, thresh_value, 255, cv2.THRESH_BINARY)
+        # l = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        # for contour in thresh_contours:
+        #     (x, y, w, h) = cv2.boundingRect(contour)
+        #     # cv2.contourArea(contour) < 300
+
         dilated = cv2.dilate(thresh, None, iterations=dilated_itrs)
         contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -62,8 +93,8 @@ def main():
         out.write(image)
 
         if debug:
-            WIDHT = 400
-            HEGIHT = 300
+            WIDHT = 500
+            HEGIHT = 400
             resized_frame1 = cv2.resize(frame1, (WIDHT, HEGIHT))
             resized_frame2 = cv2.resize(frame2, (WIDHT, HEGIHT))
             resized_diff = cv2.resize(diff, (WIDHT, HEGIHT))
@@ -99,4 +130,5 @@ def main():
 
 
 if __name__ == "__main__":
+    read_settings("settings.txt")
     main()
